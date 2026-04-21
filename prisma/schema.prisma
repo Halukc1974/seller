@@ -130,11 +130,13 @@ model CreatorProfile {
 // ─── Category ─────────────────────────────────────────────────────────────────
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  parentId  String?
-  sortOrder Int      @default(0)
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  parentId    String?
+  sortOrder   Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
