@@ -9,7 +9,6 @@ import {
   Clock,
   Users,
   Heart,
-  ShoppingCart,
   FileText,
 } from "lucide-react";
 
@@ -21,6 +20,7 @@ import { ProductTypeBadge } from "@/components/product/product-type-badge";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PaddleCheckout } from "@/components/checkout/paddle-checkout";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -237,10 +237,11 @@ export default async function ProductDetailPage({
 
           {/* CTA buttons */}
           <div className="flex flex-col gap-3">
-            <Button variant="primary" size="lg" className="w-full">
-              <ShoppingCart className="h-5 w-5" />
-              Buy Now — {formatPrice(price)}
-            </Button>
+            <PaddleCheckout
+              productId={product.id}
+              productTitle={product.title}
+              price={formatPrice(price)}
+            />
             <Button variant="outline" size="lg" className="w-full">
               <Heart className="h-5 w-5" />
               Add to Wishlist
