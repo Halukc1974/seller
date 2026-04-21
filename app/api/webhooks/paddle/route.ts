@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import {
+  purchaseConfirmationEmail,
+  purchaseConfirmationSubject,
+} from "@/lib/email-templates";
 
 // Verify Paddle webhook signature using HMAC-SHA256
 function verifyPaddleSignature(
@@ -98,7 +103,7 @@ export async function POST(request: NextRequest) {
         product.type === "SOFTWARE" || product.type === "LICENSE";
       const licenseKey = needsLicenseKey ? generateLicenseKey() : undefined;
 
-      await db.purchase.create({
+      const purchase = await db.purchase.create({
         data: {
           userId,
           productId,
@@ -114,6 +119,35 @@ export async function POST(request: NextRequest) {
         where: { id: productId },
         data: { totalSales: { increment: 1 } },
       });
+
+      // Send purchase confirmation email
+      try {
+        const [user, productWithTitle] = await Promise.all([
+          db.user.findUnique({ where: { id: userId }, select: { email: true } }),
+          db.product.findUnique({ where: { id: productId }, select: { title: true } }),
+        ]);
+
+        if (user?.email && productWithTitle) {
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://onedollarsell.com";
+          const downloadUrl = `${baseUrl}/dashboard/downloads`;
+          const paidAmount = amountTotal ? parseFloat(amountTotal) / 100 : purchase.amount.toNumber();
+
+          await sendEmail(
+            user.email,
+            purchaseConfirmationSubject(productWithTitle.title),
+            purchaseConfirmationEmail({
+              productTitle: productWithTitle.title,
+              amount: paidAmount,
+              currency: currencyCode ?? "USD",
+              downloadUrl,
+              licenseKey: licenseKey ?? undefined,
+            }),
+          );
+        }
+      } catch (emailErr) {
+        // Email failure must not break the webhook response
+        console.error("[Paddle Webhook] Failed to send confirmation email:", emailErr);
+      }
     } else if (eventType === "transaction.refunded" && data) {
       const transactionId = data.origin_transaction_id as string | undefined ?? data.id as string;
 
