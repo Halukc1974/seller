@@ -7,7 +7,7 @@ const FOOTER_LINKS = {
     { label: "Software", href: "/products?type=SOFTWARE" },
     { label: "Assets", href: "/products?type=ASSET" },
     { label: "Courses", href: "/products?type=COURSE" },
-    { label: "Licenses", href: "/licenses" },
+    { label: "Licenses", href: "/products?type=LICENSE" },
   ],
   Company: [
     { label: "About", href: "/about" },
