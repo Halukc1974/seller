@@ -8,18 +8,20 @@ import {
   Shield,
   Clock,
   Users,
-  Heart,
   FileText,
 } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatPrice, timeAgo } from "@/lib/utils";
+import { auth } from "@/lib/auth";
+import { formatPrice } from "@/lib/utils";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductTypeBadge } from "@/components/product/product-type-badge";
+import { WishlistButton } from "@/components/product/wishlist-button";
+import { ReviewForm } from "@/components/product/review-form";
+import { ReviewList } from "@/components/product/review-list";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PaddleCheckout } from "@/components/checkout/paddle-checkout";
 
 // ---------------------------------------------------------------------------
@@ -142,8 +144,36 @@ export default async function ProductDetailPage({
 }) {
   const { slug } = await params;
 
-  const product = await getProduct(slug);
+  const [product, session] = await Promise.all([getProduct(slug), auth()]);
   if (!product) notFound();
+
+  const userId = session?.user?.id ?? null;
+
+  // Check if user has a completed purchase and existing review (in parallel)
+  const [hasPurchased, existingReview, isWishlisted] = await Promise.all([
+    userId
+      ? db.purchase
+          .findFirst({
+            where: { userId, productId: product.id, status: "COMPLETED" },
+            select: { id: true },
+          })
+          .then(Boolean)
+      : Promise.resolve(false),
+    userId
+      ? db.review.findUnique({
+          where: { userId_productId: { userId, productId: product.id } },
+          select: { id: true, rating: true, title: true, body: true },
+        })
+      : Promise.resolve(null),
+    userId
+      ? db.wishlist
+          .findUnique({
+            where: { userId_productId: { userId, productId: product.id } },
+            select: { userId: true },
+          })
+          .then(Boolean)
+      : Promise.resolve(false),
+  ]);
 
   // Derived data
   const price = Number(product.price);
@@ -242,10 +272,10 @@ export default async function ProductDetailPage({
               productTitle={product.title}
               price={formatPrice(price)}
             />
-            <Button variant="outline" size="lg" className="w-full">
-              <Heart className="h-5 w-5" />
-              Add to Wishlist
-            </Button>
+            <WishlistButton
+              productId={product.id}
+              initialWishlisted={isWishlisted}
+            />
           </div>
 
           {/* Trust signals */}
@@ -359,60 +389,29 @@ export default async function ProductDetailPage({
         )}
 
         {/* Reviews */}
-        {product.reviews.length > 0 && (
-          <section>
-            <h2 className="mb-6 text-xl font-semibold text-foreground">
-              Reviews{" "}
-              <span className="text-base font-normal text-muted-foreground">
-                ({product.reviewCount})
-              </span>
-            </h2>
-            <div className="flex flex-col gap-6">
-              {product.reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="rounded-md border border-border bg-card p-5"
-                >
-                  <div className="mb-3 flex items-start gap-3">
-                    {/* Avatar */}
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
-                      {review.user.image ? (
-                        <Image
-                          src={review.user.image}
-                          alt={review.user.name ?? "Reviewer"}
-                          width={36}
-                          height={36}
-                          className="rounded-full object-cover"
-                        />
-                      ) : (
-                        (review.user.name ?? "U").charAt(0).toUpperCase()
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {review.user.name ?? "Anonymous"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {timeAgo(new Date(review.createdAt))}
-                        </span>
-                      </div>
-                      <div className="mt-1">
-                        <RatingStars rating={review.rating} />
-                      </div>
-                    </div>
-                  </div>
-                  {review.title && (
-                    <p className="mb-1 text-sm font-medium text-foreground">{review.title}</p>
-                  )}
-                  {review.body && (
-                    <p className="text-sm leading-relaxed text-muted-foreground">{review.body}</p>
-                  )}
-                </div>
-              ))}
+        <section>
+          <h2 className="mb-6 text-xl font-semibold text-foreground">
+            Reviews{" "}
+            <span className="text-base font-normal text-muted-foreground">
+              ({product.reviewCount})
+            </span>
+          </h2>
+
+          {userId && hasPurchased && (
+            <div className="mb-8">
+              <ReviewForm
+                productId={product.id}
+                existingReview={existingReview ?? undefined}
+              />
             </div>
-          </section>
-        )}
+          )}
+
+          {product.reviews.length > 0 ? (
+            <ReviewList reviews={product.reviews} />
+          ) : (
+            <p className="text-sm text-muted-foreground">No reviews yet. Be the first to review this product.</p>
+          )}
+        </section>
 
         {/* Related products */}
         {relatedProducts.length > 0 && (

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, CheckCircle } from "lucide-react";
+import { Eye, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { ProductTypeBadge } from "@/components/product/product-type-badge";
+import { WishlistButton } from "@/components/product/wishlist-button";
 import { cn, formatPrice } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -119,13 +120,11 @@ function ProductCard({ product, layout = "grid" }: ProductCardProps) {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <button
-                    onClick={(e) => { e.preventDefault(); }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md hover:bg-white transition-colors"
-                    aria-label="Add to wishlist"
-                  >
-                    <Heart className="h-4 w-4" />
-                  </button>
+                  <WishlistButton
+                    productId={product.id}
+                    initialWishlisted={false}
+                    iconOnly
+                  />
                   <button
                     onClick={(e) => { e.preventDefault(); }}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md hover:bg-white transition-colors"
