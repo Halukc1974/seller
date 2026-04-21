@@ -1,0 +1,360 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  BUYER
+  CREATOR
+  ADMIN
+}
+
+enum ProductType {
+  TEMPLATE
+  SOFTWARE
+  ASSET
+  COURSE
+  LICENSE
+  OTHER
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+enum EventType {
+  VIEW
+  SEARCH
+  PURCHASE
+  WISHLIST_ADD
+  WISHLIST_REMOVE
+}
+
+// ─── Auth Models (NextAuth adapter compatible) ────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(BUYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  creatorProfile CreatorProfile?
+  purchases      Purchase[]
+  reviews        Review[]
+  wishlist       Wishlist[]
+  events         UserEvent[]
+}
+
+// ─── Creator Profile ──────────────────────────────────────────────────────────
+
+model CreatorProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  storeName   String
+  slug        String   @unique
+  bio         String?  @db.Text
+  avatar      String?
+  banner      String?
+  verified    Boolean  @default(false)
+  payoutEmail String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([slug])
+}
+
+// ─── Category ─────────────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  parentId  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Category?             @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]            @relation("CategoryTree")
+  products CategoriesOnProducts[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+// ─── Tag ──────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  products TagsOnProducts[]
+
+  @@index([slug])
+}
+
+// ─── Product ──────────────────────────────────────────────────────────────────
+
+model Product {
+  id               String        @id @default(cuid())
+  creatorId        String
+  title            String
+  slug             String        @unique
+  description      String?       @db.Text
+  shortDescription String?
+  type             ProductType   @default(OTHER)
+  price            Decimal       @db.Decimal(10, 2)
+  currency         String        @default("USD")
+  compareAtPrice   Decimal?      @db.Decimal(10, 2)
+  images           String[]
+  previewUrl       String?
+  demoUrl          String?
+  status           ProductStatus @default(DRAFT)
+  featured         Boolean       @default(false)
+  totalSales       Int           @default(0)
+  averageRating    Decimal       @default(0) @db.Decimal(3, 2)
+  reviewCount      Int           @default(0)
+  licenseType      String?
+  licenseTerms     String?       @db.Text
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  creator    CreatorProfile        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  files      ProductFile[]
+  categories CategoriesOnProducts[]
+  tags       TagsOnProducts[]
+  purchases  Purchase[]
+  reviews    Review[]
+  wishlist   Wishlist[]
+  collections CollectionsOnProducts[]
+  events     UserEvent[]
+
+  @@index([slug])
+  @@index([creatorId])
+  @@index([status])
+  @@index([featured])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ─── Product File ─────────────────────────────────────────────────────────────
+
+model ProductFile {
+  id        String   @id @default(cuid())
+  productId String
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  version   String   @default("1.0.0")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// ─── Join Tables ──────────────────────────────────────────────────────────────
+
+model CategoriesOnProducts {
+  productId  String
+  categoryId String
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+}
+
+model TagsOnProducts {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@index([tagId])
+}
+
+// ─── Purchase ─────────────────────────────────────────────────────────────────
+
+model Purchase {
+  id                   String         @id @default(cuid())
+  userId               String
+  productId            String
+  paddleTransactionId  String?        @unique
+  amount               Decimal        @db.Decimal(10, 2)
+  currency             String         @default("USD")
+  status               PurchaseStatus @default(PENDING)
+  licenseKey           String?        @unique
+  downloadCount        Int            @default(0)
+  maxDownloads         Int            @default(5)
+  expiresAt            DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@index([licenseKey])
+}
+
+// ─── Review ───────────────────────────────────────────────────────────────────
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  title     String?
+  body      String?  @db.Text
+  helpful   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([rating])
+}
+
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+
+model Wishlist {
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// ─── Collection ───────────────────────────────────────────────────────────────
+
+model Collection {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  image       String?
+  featured    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products CollectionsOnProducts[]
+
+  @@index([slug])
+  @@index([featured])
+}
+
+model CollectionsOnProducts {
+  productId    String
+  collectionId String
+  sortOrder    Int    @default(0)
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, collectionId])
+  @@index([collectionId])
+}
+
+// ─── User Event ───────────────────────────────────────────────────────────────
+
+model UserEvent {
+  id          String    @id @default(cuid())
+  userId      String?
+  productId   String?
+  event       EventType
+  searchQuery String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([event])
+  @@index([createdAt])
+}
