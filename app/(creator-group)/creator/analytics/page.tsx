@@ -1,6 +1,7 @@
 import { requireCreator } from "@/lib/middleware";
 import { db } from "@/lib/db";
 import { StatsCards } from "@/components/creator/stats-cards";
+import { AnalyticsCharts } from "@/components/creator/analytics-charts";
 import { formatPrice } from "@/lib/utils";
 
 export default async function CreatorAnalyticsPage() {
@@ -72,6 +73,42 @@ export default async function CreatorAnalyticsPage() {
     .sort((a, b) => b.totalSales - a.totalSales)
     .slice(0, 5);
 
+  // Revenue over last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const recentCompletedPurchases = await db.purchase.findMany({
+    where: {
+      productId: { in: productIds },
+      status: "COMPLETED",
+      createdAt: { gte: thirtyDaysAgo },
+    },
+    select: { createdAt: true, amount: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  // Group by date string (YYYY-MM-DD)
+  const revenueByDate = new Map<string, number>();
+  for (const p of recentCompletedPurchases) {
+    const key = p.createdAt.toISOString().slice(0, 10);
+    revenueByDate.set(key, (revenueByDate.get(key) ?? 0) + Number(p.amount));
+  }
+  const revenueData = Array.from(revenueByDate.entries()).map(([date, revenue]) => ({
+    date: new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    revenue: Math.round(revenue * 100) / 100,
+  }));
+
+  // Sales by product type
+  const productsWithType = await db.product.findMany({
+    where: { creatorId: profile.id, totalSales: { gt: 0 } },
+    select: { type: true, totalSales: true },
+  });
+  const typeMap = new Map<string, number>();
+  for (const p of productsWithType) {
+    typeMap.set(p.type, (typeMap.get(p.type) ?? 0) + p.totalSales);
+  }
+  const typeData = Array.from(typeMap.entries()).map(([name, value]) => ({ name, value }));
+
   return (
     <div className="space-y-8">
       {/* Page header */}
@@ -84,6 +121,9 @@ export default async function CreatorAnalyticsPage() {
 
       {/* Stats row */}
       <StatsCards stats={stats} />
+
+      {/* Charts */}
+      <AnalyticsCharts revenueData={revenueData} typeData={typeData} />
 
       {/* Recent Sales */}
       <section className="space-y-4">
