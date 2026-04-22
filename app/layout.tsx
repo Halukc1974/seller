@@ -15,8 +15,28 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seller — Premium Digital Products",
-  description: "Discover and purchase premium digital products: templates, software, assets, courses, and licenses.",
+  title: {
+    default: "Seller — Premium Digital Products",
+    template: "%s | Seller",
+  },
+  description: "Discover and purchase premium digital products: templates, software, assets, courses, and licenses from verified creators.",
+  metadataBase: new URL("https://onedollarsell.com"),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Seller",
+    title: "Seller — Premium Digital Products",
+    description: "Premium digital marketplace for templates, software, assets, courses, and licenses.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seller — Premium Digital Products",
+    description: "Premium digital marketplace for templates, software, assets, courses, and licenses.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

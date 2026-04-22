@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +24,7 @@ import { ReviewList } from "@/components/product/review-list";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { Badge } from "@/components/ui/badge";
 import { PaddleCheckout } from "@/components/checkout/paddle-checkout";
+import { ProductJsonLd } from "@/components/seo/product-jsonld";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -134,6 +136,40 @@ async function getRelatedProducts(productId: string, categorySlug: string | null
 }
 
 // ---------------------------------------------------------------------------
+// Metadata
+// ---------------------------------------------------------------------------
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await db.product.findUnique({
+    where: { slug },
+    select: {
+      title: true,
+      shortDescription: true,
+      images: true,
+      price: true,
+      currency: true,
+    },
+  });
+  if (!product) return { title: "Product Not Found" };
+  return {
+    title: product.title,
+    description:
+      product.shortDescription ||
+      `${product.title} — premium digital product on Seller`,
+    openGraph: {
+      title: product.title,
+      description: product.shortDescription || undefined,
+      images: product.images[0] ? [{ url: product.images[0] as string }] : [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -193,6 +229,18 @@ export default async function ProductDetailPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <ProductJsonLd
+        product={{
+          title: product.title,
+          description: product.description ?? product.shortDescription ?? "",
+          price: Number(product.price),
+          currency: product.currency,
+          images: product.images as string[],
+          averageRating: Number(product.averageRating),
+          reviewCount: product.reviewCount,
+          creator: { storeName: product.creator.storeName },
+        }}
+      />
       {/* Breadcrumb */}
       <div className="mb-8">
         <Link

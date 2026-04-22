@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CheckCircle, Package } from "lucide-react";
 import { db } from "@/lib/db";
@@ -7,16 +8,27 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const creator = await db.creatorProfile.findUnique({
     where: { slug },
-    select: { storeName: true, bio: true },
+    select: { storeName: true, bio: true, avatar: true },
   });
   if (!creator) return {};
+  const description = creator.bio ?? `Browse products by ${creator.storeName}`;
   return {
-    title: `${creator.storeName} — Seller`,
-    description: creator.bio ?? `Browse products by ${creator.storeName}`,
+    title: creator.storeName,
+    description,
+    openGraph: {
+      title: `${creator.storeName} | Seller`,
+      description,
+      images: creator.avatar ? [{ url: creator.avatar }] : [],
+    },
+    twitter: {
+      card: "summary",
+      title: `${creator.storeName} | Seller`,
+      description,
+    },
   };
 }
 
