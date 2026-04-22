@@ -397,7 +397,7 @@ export default async function HomePage() {
             Join thousands of creators who are already selling on Seller.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/dashboard/become-creator">
+            <Link href="/become-creator">
               <button className="inline-flex h-12 items-center justify-center rounded-sm bg-white px-6 text-base font-medium text-primary shadow-sm hover:bg-white/90 transition-all duration-200 active:scale-[0.98]">
                 Become a Creator
               </button>

@@ -194,7 +194,7 @@ export default function AboutPage() {
             Whether you create or consume, there&apos;s a place for you on Seller.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/dashboard/become-creator">
+            <Link href="/become-creator">
               <Button size="lg">Become a Creator</Button>
             </Link>
             <Link href="/products">

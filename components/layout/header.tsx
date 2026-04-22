@@ -159,6 +159,29 @@ export function Header() {
             <ThemeToggle />
             <CartIcon />
 
+            {/* Creator CTA — role-aware */}
+            {(() => {
+              const role = session?.user?.role;
+              if (role === "CREATOR" || role === "ADMIN") {
+                return (
+                  <Link
+                    href="/creator/products"
+                    className="hidden md:inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    Creator dashboard
+                  </Link>
+                );
+              }
+              return (
+                <Link
+                  href="/become-creator"
+                  className="hidden md:inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  Sell on Seller
+                </Link>
+              );
+            })()}
+
             {session?.user ? (
               <div className="hidden md:block">
                 <UserMenu name={session.user.name} email={session.user.email} />
