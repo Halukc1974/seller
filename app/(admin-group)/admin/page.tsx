@@ -1,183 +1,276 @@
+import Link from "next/link";
+import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { requireAdmin } from "@/lib/middleware";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
+import { loadDashboardMetrics } from "@/lib/admin-metrics";
+import { DashboardChart } from "@/components/admin/dashboard-chart";
+
+export const dynamic = "force-dynamic";
+
+function Delta({ pct }: { pct: number | null }) {
+  if (pct === null) {
+    return <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">—</span>;
+  }
+  const up = pct > 0;
+  const flat = pct === 0;
+  const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
+  const color = flat
+    ? "text-muted-foreground"
+    : up
+      ? "text-green-600 dark:text-green-400"
+      : "text-red-600 dark:text-red-400";
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs ${color}`}>
+      <Icon className="h-3 w-3" />
+      {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
 
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  const [userCount, productCount, orderCount, revenueAgg, recentPurchases, recentUsers, recentProducts] =
-    await Promise.all([
-      db.user.count(),
-      db.product.count(),
-      db.purchase.count(),
-      db.purchase.aggregate({ _sum: { amount: true } }),
-      db.purchase.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: { select: { name: true, email: true } },
-          product: { select: { title: true } },
-        },
-      }),
-      db.user.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: { id: true, name: true, email: true, role: true, createdAt: true },
-      }),
-      db.product.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          creator: { select: { storeName: true } },
-        },
-      }),
-    ]);
+  const metrics = await loadDashboardMetrics();
 
-  const totalRevenue = Number(revenueAgg._sum.amount ?? 0);
-
-  const STAT_CARDS = [
-    { label: "Total Users", value: userCount.toLocaleString() },
-    { label: "Total Products", value: productCount.toLocaleString() },
-    { label: "Total Orders", value: orderCount.toLocaleString() },
-    { label: "Total Revenue", value: formatPrice(totalRevenue) },
-  ];
-
-  const ROLE_STYLES: Record<string, string> = {
-    ADMIN: "bg-red-500/10 text-red-600 dark:text-red-400",
-    CREATOR: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    BUYER: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  };
-
-  const STATUS_STYLES: Record<string, string> = {
-    DRAFT: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-    PUBLISHED: "bg-green-500/10 text-green-600 dark:text-green-400",
-    ARCHIVED: "bg-muted text-muted-foreground",
-  };
-
-  const PURCHASE_STATUS_STYLES: Record<string, string> = {
-    PENDING: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-    COMPLETED: "bg-green-500/10 text-green-600 dark:text-green-400",
-    REFUNDED: "bg-red-500/10 text-red-600 dark:text-red-400",
-  };
+  const [recentPurchases, recentUsers, topProducts] = await Promise.all([
+    db.purchase.findMany({
+      take: 6,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { name: true, email: true } },
+        product: { select: { title: true, slug: true } },
+      },
+    }),
+    db.user.findMany({
+      take: 6,
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+    }),
+    db.product.findMany({
+      take: 6,
+      orderBy: { totalSales: "desc" },
+      where: { status: "PUBLISHED" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        totalSales: true,
+        price: true,
+        creator: { select: { storeName: true } },
+      },
+    }),
+  ]);
 
   return (
-    <div className="space-y-8">
-      {/* Page header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Overview of your marketplace</p>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Marketplace overview. Today: {metrics.kpis.today.orders} order
+          {metrics.kpis.today.orders === 1 ? "" : "s"},{" "}
+          {formatPrice(metrics.kpis.today.revenue)} revenue.
+        </p>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STAT_CARDS.map(({ label, value }) => (
-          <div key={label} className="rounded-lg border border-border bg-card p-5">
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-          </div>
-        ))}
+      {/* Period KPI cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard
+          label={metrics.kpis.revenue7d.label}
+          value={formatPrice(metrics.kpis.revenue7d.value)}
+          previous={`vs ${formatPrice(metrics.kpis.revenue7d.previous)}`}
+          delta={metrics.kpis.revenue7d.deltaPct}
+        />
+        <KpiCard
+          label={metrics.kpis.orders7d.label}
+          value={metrics.kpis.orders7d.value.toLocaleString()}
+          previous={`vs ${metrics.kpis.orders7d.previous}`}
+          delta={metrics.kpis.orders7d.deltaPct}
+        />
+        <KpiCard
+          label={metrics.kpis.revenue30d.label}
+          value={formatPrice(metrics.kpis.revenue30d.value)}
+          previous={`vs ${formatPrice(metrics.kpis.revenue30d.previous)}`}
+          delta={metrics.kpis.revenue30d.deltaPct}
+        />
+        <KpiCard
+          label={metrics.kpis.orders30d.label}
+          value={metrics.kpis.orders30d.value.toLocaleString()}
+          previous={`vs ${metrics.kpis.orders30d.previous}`}
+          delta={metrics.kpis.orders30d.deltaPct}
+        />
       </div>
 
-      {/* Recent activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent orders */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <h2 className="text-sm font-semibold">Recent Orders</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {recentPurchases.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No orders yet</p>
-            ) : (
-              recentPurchases.map((p) => (
-                <div key={p.id} className="px-4 py-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{p.product.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {p.user.name ?? p.user.email}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-medium">{formatPrice(Number(p.amount))}</p>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PURCHASE_STATUS_STYLES[p.status] ?? ""}`}
-                    >
-                      {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Recent users */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <h2 className="text-sm font-semibold">New Users</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {recentUsers.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No users yet</p>
-            ) : (
-              recentUsers.map((u) => (
-                <div key={u.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
-                    {((u.name ?? u.email ?? "?")[0]).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{u.name ?? u.email}</p>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_STYLES[u.role] ?? ""}`}
-                    >
-                      {u.role}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Recent products */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <h2 className="text-sm font-semibold">New Products</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {recentProducts.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground text-center">No products yet</p>
-            ) : (
-              recentProducts.map((p) => (
-                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                  {p.images?.[0] ? (
-                    <img
-                      src={p.images[0]}
-                      alt={p.title}
-                      className="h-8 w-8 rounded object-cover shrink-0 border border-border"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded bg-muted shrink-0 border border-border" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{p.title}</p>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status] ?? ""}`}
-                      >
-                        {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate">
-                        by {p.creator.storeName}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MiniCard label="AOV (30d)" value={formatPrice(metrics.kpis.aov30d)} />
+        <MiniCard
+          label="Refund rate (30d)"
+          value={`${metrics.kpis.refundRate30d.toFixed(1)}%`}
+        />
+        <MiniCard
+          label="Active creators"
+          value={metrics.totals.activeCreators.toLocaleString()}
+        />
+        <MiniCard
+          label="Active buyers (30d)"
+          value={metrics.totals.activeBuyers30.toLocaleString()}
+        />
       </div>
+
+      {/* Chart */}
+      <div className="rounded-md border border-border bg-card p-5">
+        <header className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Revenue — last 30 days</h2>
+          <Link
+            href="/admin/analytics"
+            className="text-xs text-primary hover:underline"
+          >
+            View analytics →
+          </Link>
+        </header>
+        <DashboardChart data={metrics.timeSeries} />
+      </div>
+
+      {/* Lifetime totals strip */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MiniCard
+          label="Total users"
+          value={metrics.totals.totalUsers.toLocaleString()}
+        />
+        <MiniCard
+          label="Total products"
+          value={metrics.totals.totalProducts.toLocaleString()}
+        />
+        <MiniCard
+          label="Total completed orders"
+          value={metrics.totals.totalOrders.toLocaleString()}
+        />
+        <MiniCard
+          label="Total revenue"
+          value={formatPrice(metrics.totals.totalRevenue)}
+        />
+      </div>
+
+      {/* Lists */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <ListCard title="Recent orders" viewAllHref="/admin/orders">
+          {recentPurchases.map((p) => (
+            <Link
+              key={p.id}
+              href={`/admin/orders/${p.id}`}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-muted/40"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{p.product.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {p.user.name ?? p.user.email}
+                </p>
+              </div>
+              <span className="shrink-0 font-mono text-sm">
+                {formatPrice(Number(p.amount))}
+              </span>
+            </Link>
+          ))}
+        </ListCard>
+
+        <ListCard title="New users" viewAllHref="/admin/users">
+          {recentUsers.map((u) => (
+            <Link
+              key={u.id}
+              href={`/admin/users/${u.id}`}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                {((u.name ?? u.email ?? "?")[0]).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{u.name ?? u.email}</p>
+                <p className="text-xs text-muted-foreground">{u.role}</p>
+              </div>
+              {u.status === "BANNED" && (
+                <span className="shrink-0 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] text-red-600">
+                  Banned
+                </span>
+              )}
+            </Link>
+          ))}
+        </ListCard>
+
+        <ListCard title="Top products" viewAllHref="/admin/products">
+          {topProducts.map((p) => (
+            <Link
+              key={p.id}
+              href={`/products/${p.slug}`}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-muted/40"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{p.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {p.creator.storeName}
+                </p>
+              </div>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {p.totalSales} sold
+              </span>
+            </Link>
+          ))}
+        </ListCard>
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  previous,
+  delta,
+}: {
+  label: string;
+  value: string;
+  previous: string;
+  delta: number | null;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-xl font-semibold">{value}</p>
+      <div className="mt-1 flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground">{previous}</span>
+        <Delta pct={delta} />
+      </div>
+    </div>
+  );
+}
+
+function MiniCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-lg font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function ListCard({
+  title,
+  viewAllHref,
+  children,
+}: {
+  title: string;
+  viewAllHref: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-card">
+      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <Link href={viewAllHref} className="text-xs text-primary hover:underline">
+          View all →
+        </Link>
+      </header>
+      <div className="divide-y divide-border">{children}</div>
     </div>
   );
 }

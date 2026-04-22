@@ -3,6 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { isSuperAdminEmail } from "@/lib/admin";
 
 const providers = [];
 
@@ -13,7 +14,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    })
+    }),
   );
 }
 
@@ -39,10 +40,14 @@ providers.push(
 
       const isPasswordValid = await bcrypt.compare(
         credentials.password as string,
-        user.password
+        user.password,
       );
 
       if (!isPasswordValid) {
+        return null;
+      }
+
+      if (user.status === "BANNED") {
         return null;
       }
 
@@ -54,7 +59,7 @@ providers.push(
         role: user.role,
       };
     },
-  })
+  }),
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -65,15 +70,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers,
   callbacks: {
+    async signIn({ user }) {
+      const email = user?.email ?? null;
+      if (!email) return true;
+
+      // Super-admin bootstrap: always keep this email as ADMIN and never banned.
+      if (isSuperAdminEmail(email)) {
+        await db.user.updateMany({
+          where: { email },
+          data: { role: "ADMIN", status: "ACTIVE" },
+        });
+      }
+
+      // Block banned users (covers OAuth path which skips authorize()).
+      const dbUser = await db.user.findUnique({
+        where: { email },
+        select: { status: true },
+      });
+      if (dbUser?.status === "BANNED") return false;
+
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        // Look up role from db for fresh data
         const dbUser = await db.user.findUnique({
           where: { id: user.id as string },
-          select: { role: true },
+          select: { role: true, email: true },
         });
         token.role = dbUser?.role ?? "BUYER";
+        token.email = dbUser?.email ?? user.email ?? null;
+
+        if (isSuperAdminEmail(token.email as string | null)) {
+          token.role = "ADMIN";
+        }
       }
       return token;
     },
@@ -81,6 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.email = (token.email as string | null) ?? session.user.email;
       }
       return session;
     },

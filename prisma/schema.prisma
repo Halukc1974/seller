@@ -14,6 +14,11 @@ enum Role {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
 enum ProductType {
   TEMPLATE
   SOFTWARE
@@ -87,15 +92,18 @@ model VerificationToken {
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role      @default(BUYER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role       @default(BUYER)
+  status        UserStatus @default(ACTIVE)
+  bannedAt      DateTime?
+  bannedReason  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   accounts       Account[]
   sessions       Session[]
@@ -110,19 +118,22 @@ model User {
 // ─── Creator Profile ──────────────────────────────────────────────────────────
 
 model CreatorProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  storeName   String
-  slug        String   @unique
-  bio         String?  @db.Text
-  avatar      String?
-  banner      String?
-  verified    Boolean  @default(false)
-  payoutEmail String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  storeName       String
+  slug            String    @unique
+  bio             String?   @db.Text
+  avatar          String?
+  banner          String?
+  verified        Boolean   @default(false)
+  suspended       Boolean   @default(false)
+  suspendedAt     DateTime?
+  suspendedReason String?
+  payoutEmail     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  user        User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   products    Product[]
   acceptances CreatorLegalAcceptance[]
 
@@ -391,6 +402,36 @@ model CollectionsOnProducts {
 }
 
 // ─── User Event ───────────────────────────────────────────────────────────────
+
+// ─── Admin Audit Log ─────────────────────────────────────────────────────────
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// ─── Platform Settings (singleton row, id = "singleton") ────────────────────
+
+model PlatformSettings {
+  id                  String   @id @default("singleton")
+  creatorRevenueShare Decimal  @default(0.80) @db.Decimal(3, 2)
+  allowNewCreators    Boolean  @default(true)
+  allowNewPurchases   Boolean  @default(true)
+  maintenanceMessage  String?
+  updatedAt           DateTime @updatedAt
+  updatedBy           String?
+}
 
 model UserEvent {
   id          String    @id @default(cuid())

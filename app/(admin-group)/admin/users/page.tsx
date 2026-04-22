@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/middleware";
 import { db } from "@/lib/db";
 import { RoleSelect } from "@/components/admin/role-select";
@@ -70,7 +71,12 @@ export default async function AdminUsersPage() {
                         {((user.name ?? user.email ?? "?")[0]).toUpperCase()}
                       </div>
                     )}
-                    <p className="font-medium truncate max-w-[150px]">{user.name ?? "—"}</p>
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="font-medium truncate max-w-[150px] hover:text-primary"
+                    >
+                      {user.name ?? "—"}
+                    </Link>
                   </div>
                 </td>
 

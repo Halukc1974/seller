@@ -95,12 +95,17 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               {purchases.map((p) => (
                 <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                   {/* Date */}
-                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {new Date(p.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <a
+                      href={`/admin/orders/${p.id}`}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      {new Date(p.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </a>
                   </td>
 
                   {/* Buyer */}
