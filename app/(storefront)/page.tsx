@@ -10,6 +10,7 @@ import {
   Palette,
   GraduationCap,
   Key,
+  FolderOpen,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
@@ -60,6 +61,17 @@ async function getPopularTags() {
   return db.tag.findMany({
     orderBy: { products: { _count: "desc" } },
     take: 12,
+  });
+}
+
+async function getFeaturedCollections() {
+  return db.collection.findMany({
+    where: { featured: true },
+    include: {
+      _count: { select: { products: true } },
+    },
+    orderBy: { sortOrder: "asc" },
+    take: 6,
   });
 }
 
@@ -132,12 +144,13 @@ function getCategoryIcon(slug: string) {
 // ---------------------------------------------------------------------------
 
 export default async function HomePage() {
-  const [featured, trending, categories, tags, stats] = await Promise.all([
+  const [featured, trending, categories, tags, stats, featuredCollections] = await Promise.all([
     getFeaturedProducts(),
     getTrendingProducts(),
     getCategories(),
     getPopularTags(),
     getStats(),
+    getFeaturedCollections(),
   ]);
 
   return (
@@ -254,7 +267,50 @@ export default async function HomePage() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 4. Trending Now                                                      */}
+      {/* 4. Curated Collections                                               */}
+      {/* ------------------------------------------------------------------ */}
+      {featuredCollections.length > 0 && (
+        <section className="py-14 px-4 border-t border-border">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FolderOpen className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-2xl font-bold">Curated Collections</h2>
+                  <p className="text-sm text-muted-foreground">Hand-picked product sets</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredCollections.map((col) => (
+                <Link
+                  key={col.id}
+                  href={`/collections/${col.slug}`}
+                  className="group flex flex-col gap-3 rounded-md border border-border bg-card p-5 hover:border-primary/60 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                    <FolderOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {col.title}
+                    </h3>
+                    {col.description && (
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{col.description}</p>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {col._count.products} {col._count.products === 1 ? "product" : "products"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 5. Trending Now                                                      */}
       {/* ------------------------------------------------------------------ */}
       {trending.length > 0 && (
         <section className="bg-secondary/30 py-14 px-4 border-t border-border">
