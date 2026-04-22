@@ -100,6 +100,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   creatorProfile CreatorProfile?
+  cart           Cart?
   purchases      Purchase[]
   reviews        Review[]
   wishlist       Wishlist[]
@@ -137,11 +138,11 @@ model Category {
   icon        String?
   parentId    String?
   sortOrder   Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  parent   Category?             @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[]            @relation("CategoryTree")
+  parent   Category?              @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]             @relation("CategoryTree")
   products CategoriesOnProducts[]
 
   @@index([slug])
@@ -188,15 +189,16 @@ model Product {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  creator    CreatorProfile        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  files      ProductFile[]
-  categories CategoriesOnProducts[]
-  tags       TagsOnProducts[]
-  purchases  Purchase[]
-  reviews    Review[]
-  wishlist   Wishlist[]
+  creator     CreatorProfile          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  files       ProductFile[]
+  categories  CategoriesOnProducts[]
+  tags        TagsOnProducts[]
+  purchases   Purchase[]
+  reviews     Review[]
+  wishlist    Wishlist[]
   collections CollectionsOnProducts[]
-  events     UserEvent[]
+  cartItems   CartItem[]
+  events      UserEvent[]
 
   @@index([slug])
   @@index([creatorId])
@@ -250,20 +252,47 @@ model TagsOnProducts {
 
 // ─── Purchase ─────────────────────────────────────────────────────────────────
 
+// ─── Cart ─────────────────────────────────────────────────────────────────────
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
 model Purchase {
-  id                   String         @id @default(cuid())
-  userId               String
-  productId            String
-  paddleTransactionId  String?        @unique
-  amount               Decimal        @db.Decimal(10, 2)
-  currency             String         @default("USD")
-  status               PurchaseStatus @default(PENDING)
-  licenseKey           String?        @unique
-  downloadCount        Int            @default(0)
-  maxDownloads         Int            @default(5)
-  expiresAt            DateTime?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id                  String         @id @default(cuid())
+  userId              String
+  productId           String
+  paddleTransactionId String?
+  amount              Decimal        @db.Decimal(10, 2)
+  currency            String         @default("USD")
+  status              PurchaseStatus @default(PENDING)
+  licenseKey          String?        @unique
+  downloadCount       Int            @default(0)
+  maxDownloads        Int            @default(5)
+  expiresAt           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -272,6 +301,7 @@ model Purchase {
   @@index([productId])
   @@index([status])
   @@index([licenseKey])
+  @@index([paddleTransactionId])
 }
 
 // ─── Review ───────────────────────────────────────────────────────────────────

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { ProductTypeBadge } from "@/components/product/product-type-badge";
 import { WishlistButton } from "@/components/product/wishlist-button";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { cn, formatPrice } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -125,13 +126,18 @@ function ProductCard({ product, layout = "grid" }: ProductCardProps) {
                     initialWishlisted={false}
                     iconOnly
                   />
-                  <button
-                    onClick={(e) => { e.preventDefault(); }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md hover:bg-white transition-colors"
-                    aria-label="Quick view"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
+                  <AddToCartButton
+                    variant="icon"
+                    line={{
+                      productId: product.id,
+                      slug: product.slug,
+                      title: product.title,
+                      price: Number(product.price),
+                      currency: "USD",
+                      image: product.images[0] ?? null,
+                      creatorName: product.creator.storeName,
+                    }}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

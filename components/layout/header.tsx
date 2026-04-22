@@ -8,6 +8,7 @@ import { ShoppingBag, Menu, X, ChevronDown, LayoutDashboard, Settings, LogOut } 
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./theme-toggle";
 import { SearchBar } from "./search-bar";
+import { CartIcon } from "./cart-icon";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -156,6 +157,7 @@ export function Header() {
             </div>
 
             <ThemeToggle />
+            <CartIcon />
 
             {session?.user ? (
               <div className="hidden md:block">

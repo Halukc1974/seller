@@ -23,7 +23,8 @@ import { ReviewForm } from "@/components/product/review-form";
 import { ReviewList } from "@/components/product/review-list";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { Badge } from "@/components/ui/badge";
-import { PaddleCheckout } from "@/components/checkout/paddle-checkout";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
+import { DigitalProductDisclaimer } from "@/components/product/digital-product-disclaimer";
 import { ProductJsonLd } from "@/components/seo/product-jsonld";
 import { RecommendationSection } from "@/components/product/recommendation-section";
 import { ViewTracker } from "@/components/product/view-tracker";
@@ -317,15 +318,22 @@ export default async function ProductDetailPage({
 
           {/* CTA buttons */}
           <div className="flex flex-col gap-3">
-            <PaddleCheckout
-              productId={product.id}
-              productTitle={product.title}
-              price={formatPrice(price)}
+            <AddToCartButton
+              line={{
+                productId: product.id,
+                slug: product.slug,
+                title: product.title,
+                price: Number(product.price),
+                currency: product.currency,
+                image: (product.images as string[])[0] ?? null,
+                creatorName: product.creator.storeName,
+              }}
             />
             <WishlistButton
               productId={product.id}
               initialWishlisted={isWishlisted}
             />
+            <DigitalProductDisclaimer />
           </div>
 
           {/* Trust signals */}
