@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, Download, Heart, CreditCard, Settings } from "lucide-react";
+import { ShoppingBag, Download, Heart, CreditCard, Star, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   { label: "Downloads", href: "/dashboard/downloads", icon: Download },
+  { label: "Reviews", href: "/dashboard/reviews", icon: Star },
   { label: "Wishlist", href: "/dashboard/wishlist", icon: Heart },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },

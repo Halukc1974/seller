@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/middleware";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
+import { RefundButton } from "@/components/admin/refund-button";
 
 type StatusFilter = "ALL" | "PENDING" | "COMPLETED" | "REFUNDED";
 
@@ -85,6 +86,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">
                   Transaction ID
                 </th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -133,6 +137,14 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                   {/* Transaction ID */}
                   <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground font-mono text-xs truncate max-w-[180px]">
                     {p.paddleTransactionId ?? "—"}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-3 text-right">
+                    <RefundButton
+                      purchaseId={p.id}
+                      disabled={p.status === "REFUNDED"}
+                    />
                   </td>
                 </tr>
               ))}

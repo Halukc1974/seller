@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/middleware";
 import { db } from "@/lib/db";
 import { RoleSelect } from "@/components/admin/role-select";
+import { VerifyCreatorToggle } from "@/components/admin/verify-creator-toggle";
 
 const ROLE_STYLES: Record<string, string> = {
   ADMIN: "bg-red-500/10 text-red-600 dark:text-red-400",
@@ -20,6 +21,7 @@ export default async function AdminUsersPage() {
       image: true,
       role: true,
       createdAt: true,
+      creatorProfile: { select: { verified: true } },
     },
   });
 
@@ -48,7 +50,7 @@ export default async function AdminUsersPage() {
               <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">
                 Joined
               </th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Change Role</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -95,9 +97,17 @@ export default async function AdminUsersPage() {
                   })}
                 </td>
 
-                {/* Role change */}
+                {/* Actions */}
                 <td className="px-4 py-3 text-right">
-                  <RoleSelect userId={user.id} currentRole={user.role} />
+                  <div className="inline-flex items-center gap-2">
+                    {user.creatorProfile && (
+                      <VerifyCreatorToggle
+                        userId={user.id}
+                        verified={user.creatorProfile.verified}
+                      />
+                    )}
+                    <RoleSelect userId={user.id} currentRole={user.role} />
+                  </div>
                 </td>
               </tr>
             ))}

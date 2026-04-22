@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, BarChart3, Settings } from "lucide-react";
+import { Package, BarChart3, DollarSign, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Products", href: "/creator/products", icon: Package },
   { label: "Analytics", href: "/creator/analytics", icon: BarChart3 },
+  { label: "Earnings", href: "/creator/earnings", icon: DollarSign },
   { label: "Settings", href: "/creator/settings", icon: Settings },
 ];
 
