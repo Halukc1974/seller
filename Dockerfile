@@ -26,8 +26,18 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
+# Prisma CLI + engines so `prisma migrate deploy` works at container start.
+# Standalone output does not bundle the CLI; copy the minimum we need.
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Entrypoint runs migrations then exec's the CMD.
+COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
