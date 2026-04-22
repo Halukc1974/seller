@@ -25,6 +25,8 @@ import { RatingStars } from "@/components/ui/rating-stars";
 import { Badge } from "@/components/ui/badge";
 import { PaddleCheckout } from "@/components/checkout/paddle-checkout";
 import { ProductJsonLd } from "@/components/seo/product-jsonld";
+import { RecommendationSection } from "@/components/product/recommendation-section";
+import { ViewTracker } from "@/components/product/view-tracker";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -472,7 +474,18 @@ export default async function ProductDetailPage({
             </div>
           </section>
         )}
+
+        {/* Users Also Bought — co-purchase recommendations */}
+        <RecommendationSection
+          title="Users Also Bought"
+          type="also-bought"
+          productId={product.id}
+          limit={4}
+        />
       </div>
+
+      {/* Track view event silently on mount */}
+      <ViewTracker productId={product.id} />
     </div>
   );
 }

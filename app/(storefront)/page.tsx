@@ -16,6 +16,7 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
+import { PersonalizedRecommendations } from "@/components/product/personalized-recommendations";
 
 // ---------------------------------------------------------------------------
 // Data-fetching helpers
@@ -342,7 +343,16 @@ export default async function HomePage() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 5. Stats / Social Proof                                              */}
+      {/* 6. Personalized Recommendations (client — shows for all users)      */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="py-14 px-4 border-t border-border">
+        <div className="mx-auto max-w-7xl">
+          <PersonalizedRecommendations />
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 7. Stats / Social Proof                                              */}
       {/* ------------------------------------------------------------------ */}
       <section className="py-14 px-4 border-t border-border">
         <div className="mx-auto max-w-7xl">
