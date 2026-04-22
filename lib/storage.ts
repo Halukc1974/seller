@@ -1,35 +1,90 @@
 import crypto from "crypto";
-import path from "path";
-import fs from "fs";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const SECRET = process.env.SIGNED_URL_SECRET || "dev-secret";
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET = process.env.R2_BUCKET;
+const R2_ENDPOINT =
+  process.env.R2_ENDPOINT ||
+  (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined);
 
-export function generateSignedUrl(purchaseId: string, fileId: string, expiresInSeconds = 3600): string {
-  const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
-  const payload = `${purchaseId}:${fileId}:${expires}`;
-  const signature = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
-  return `/api/downloads/${purchaseId}?fileId=${fileId}&expires=${expires}&sig=${signature}`;
+let _client: S3Client | null = null;
+
+function getClient(): S3Client {
+  if (_client) return _client;
+  if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT || !R2_BUCKET) {
+    throw new Error(
+      "R2 storage is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET.",
+    );
+  }
+  _client = new S3Client({
+    region: "auto",
+    endpoint: R2_ENDPOINT,
+    credentials: {
+      accessKeyId: R2_ACCESS_KEY_ID,
+      secretAccessKey: R2_SECRET_ACCESS_KEY,
+    },
+  });
+  return _client;
 }
 
-export function verifySignedUrl(purchaseId: string, fileId: string, expires: string, signature: string): boolean {
-  const now = Math.floor(Date.now() / 1000);
-  if (parseInt(expires) < now) return false;
-  const payload = `${purchaseId}:${fileId}:${expires}`;
-  const expected = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
-  try {
-    return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expected, "hex"));
-  } catch {
-    return false;
-  }
+export interface R2UploadInput {
+  key: string;
+  body: Buffer | Uint8Array;
+  contentType: string;
+}
+
+export async function putObject({ key, body, contentType }: R2UploadInput): Promise<void> {
+  const client = getClient();
+  await client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET!,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    }),
+  );
+}
+
+export async function deleteObject(key: string): Promise<void> {
+  const client = getClient();
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: R2_BUCKET!,
+      Key: key,
+    }),
+  );
+}
+
+export async function presignDownloadUrl(
+  key: string,
+  downloadFileName: string,
+  expiresInSeconds = 900,
+): Promise<string> {
+  const client = getClient();
+  const command = new GetObjectCommand({
+    Bucket: R2_BUCKET!,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${sanitizeHeaderValue(downloadFileName)}"`,
+  });
+  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+export function buildProductFileKey(userId: string, originalFileName: string): string {
+  const ext = originalFileName.includes(".")
+    ? "." + originalFileName.split(".").pop()!.toLowerCase()
+    : "";
+  return `products/${userId}/${crypto.randomUUID()}${ext}`;
 }
 
 export function generateLicenseKey(): string {
   return Array.from({ length: 4 }, () =>
-    crypto.randomBytes(4).toString("hex").toUpperCase()
+    crypto.randomBytes(4).toString("hex").toUpperCase(),
   ).join("-");
 }
 
-export function getFilePath(relativePath: string): string {
-  return path.resolve(UPLOAD_DIR, relativePath);
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/["\\\r\n]/g, "_");
 }

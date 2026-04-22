@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
-
-// Use UPLOAD_DIR env var; cwd fallback is evaluated lazily inside handler to avoid Turbopack NFT tracing
-const UPLOAD_DIR_ENV = process.env.UPLOAD_DIR;
+import { buildProductFileKey, putObject } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -24,26 +19,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const uploadDir = UPLOAD_DIR_ENV ?? join(process.cwd(), "uploads");
-
-    // Ensure upload directory exists
-    await mkdir(uploadDir, { recursive: true });
-
     const results: { fileName: string; filePath: string; fileSize: number; mimeType: string }[] = [];
 
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const ext = file.name.includes(".") ? "." + file.name.split(".").pop() : "";
-      const uniqueName = `${randomUUID()}${ext}`;
-      const filePath = join(uploadDir, uniqueName);
+      const key = buildProductFileKey(session.user.id, file.name);
+      const contentType = file.type || "application/octet-stream";
 
-      await writeFile(filePath, buffer);
+      await putObject({ key, body: buffer, contentType });
 
       results.push({
         fileName: file.name,
-        filePath: uniqueName,
+        filePath: key,
         fileSize: file.size,
-        mimeType: file.type || "application/octet-stream",
+        mimeType: contentType,
       });
     }
 

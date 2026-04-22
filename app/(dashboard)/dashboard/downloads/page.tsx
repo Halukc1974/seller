@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Download, FileText, Package } from "lucide-react";
-import { generateSignedUrl } from "@/lib/storage";
 import { CopyButton } from "@/components/dashboard/copy-button";
 
 function formatBytes(bytes: number): string {
@@ -98,7 +97,7 @@ export default async function DownloadsPage() {
                     <p className="px-4 py-3 text-sm text-muted-foreground">No files attached to this product.</p>
                   ) : (
                     purchase.product.files.map((file) => {
-                      const signedUrl = generateSignedUrl(purchase.id, file.id);
+                      const downloadUrl = `/api/downloads/${purchase.id}?fileId=${file.id}`;
                       return (
                         <div key={file.id} className="flex items-center gap-3 px-4 py-3">
                           <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -110,7 +109,7 @@ export default async function DownloadsPage() {
                           </div>
                           {remaining > 0 ? (
                             <a
-                              href={signedUrl}
+                              href={downloadUrl}
                               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
                             >
                               <Download className="h-3.5 w-3.5" />
