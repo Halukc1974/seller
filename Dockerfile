@@ -18,6 +18,9 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Prisma engines are dynamically linked against glibc via libc6-compat
+# and need openssl at runtime. Alpine default musl is not sufficient.
+RUN apk add --no-cache libc6-compat openssl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -27,10 +30,11 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
 # Prisma CLI + engines so `prisma migrate deploy` works at container start.
-# Standalone output does not bundle the CLI; copy the minimum we need.
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Standalone output ships a trimmed node_modules; overlay the builder's full
+# tree so the Prisma CLI and its transitive deps (@prisma/config -> effect,
+# etc.) can resolve. Writes over the same paths — no conflict.
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Entrypoint runs migrations then exec's the CMD.
 COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
