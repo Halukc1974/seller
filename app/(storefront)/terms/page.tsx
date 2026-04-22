@@ -148,36 +148,14 @@ export default function TermsPage() {
 
           <LegalSection number="6" title="Creator Terms">
             <p>
-              If you apply to become a creator and are approved, additional
-              terms apply:
+              If you open a creator store on Seller, additional obligations apply
+              — including content standards, a <strong>20% platform fee / 80%
+              creator revenue share</strong>, payout and moderation rules. These
+              are covered in a dedicated document; please read the{" "}
+              <a href="/creator-terms">Creator Terms</a> before listing any
+              product. Listing a product means you accept those terms in addition
+              to this one.
             </p>
-            <ul>
-              <li>
-                <strong>Content standards:</strong> All products must be
-                original work or properly licensed for resale. Products that
-                infringe on third-party rights will be removed immediately.
-              </li>
-              <li>
-                <strong>Submission guidelines:</strong> Products must include
-                accurate descriptions, preview images, and correct category
-                tags.
-              </li>
-              <li>
-                <strong>Revenue share:</strong> Seller retains a platform fee on
-                each sale. Your applicable revenue share percentage is displayed
-                in your Creator Dashboard.
-              </li>
-              <li>
-                <strong>Payouts:</strong> Earnings are paid out on a rolling
-                basis subject to the minimum payout threshold. Payouts require a
-                verified identity and connected payment method.
-              </li>
-              <li>
-                <strong>Content moderation:</strong> We reserve the right to
-                remove any product that violates these Terms or our content
-                guidelines, with or without prior notice.
-              </li>
-            </ul>
           </LegalSection>
 
           <LegalSection number="7" title="Limitation of Liability">

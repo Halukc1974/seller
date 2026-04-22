@@ -17,123 +17,100 @@ export default function RefundPolicyPage() {
       {/* Body */}
       <section className="py-16 px-4 border-t border-border">
         <div className="mx-auto max-w-3xl prose-styles">
-          <LegalSection number="1" title="Overview">
+          <LegalSection number="1" title="All Sales Are Final">
             <p>
-              We want you to be completely satisfied with every purchase on
-              Seller. Most digital products are covered by a{" "}
-              <strong>30-day money-back guarantee</strong>. If you are not happy
-              with a purchase for any reason, contact us within 30 days of the
-              transaction date and we will issue a full refund — no questions
-              asked.
+              Every product sold through Seller is a{" "}
+              <strong>digital good</strong> delivered as an instant download.
+              Because digital files cannot be returned, once access has been
+              granted the purchase is considered fulfilled and{" "}
+              <strong>no refunds will be issued</strong>.
+            </p>
+            <p>
+              By completing checkout you confirm that you have read this policy
+              and expressly consent to the immediate performance of our services
+              (delivery of the digital file), waiving any statutory right of
+              withdrawal that might otherwise apply under consumer-protection
+              laws for distance sales of digital content.
             </p>
           </LegalSection>
 
-          <LegalSection number="2" title="Eligibility">
-            <p>To be eligible for a refund, the following conditions must be met:</p>
+          <LegalSection number="2" title="Why We Cannot Accept Returns">
             <ul>
-              <li>The refund request is made within 30 days of the purchase date.</li>
               <li>
-                The product is a digital download sold through the Seller
-                marketplace.
+                Digital files can be duplicated. Once a file leaves our server,
+                we cannot verify whether it was retained, shared, or modified.
               </li>
               <li>
-                The request is submitted via email to{" "}
-                <a href="mailto:support@onedollarsell.com">
-                  support@onedollarsell.com
-                </a>{" "}
-                with your order ID included.
+                Each sale is final at the moment payment is captured and the
+                download link is generated, regardless of whether the file has
+                been opened or used.
+              </li>
+              <li>
+                This policy is applied equally to all customers and cannot be
+                waived on a case-by-case basis.
               </li>
             </ul>
           </LegalSection>
 
-          <LegalSection number="3" title="Non-Refundable Items">
-            <p>The following are generally not eligible for refunds:</p>
-            <ul>
-              <li>
-                Products where the primary file has been downloaded and the buyer
-                cannot demonstrate a legitimate technical defect.
-              </li>
-              <li>
-                Subscription plans after the billing period has been used or
-                features have been accessed.
-              </li>
-              <li>
-                Products that were purchased more than 30 days before the refund
-                request.
-              </li>
-              <li>
-                Requests made solely because the buyer changed their mind after
-                full download and use.
-              </li>
-              <li>Gift cards and promotional credits.</li>
-            </ul>
+          <LegalSection number="3" title="Technical Issues">
             <p>
-              We reserve the right to deny refunds that we determine are being
-              abused or made in bad faith.
+              If a file is corrupted, fails to download, or does not match its
+              public description, contact us within{" "}
+              <strong>14 days of purchase</strong>. We will work with the
+              creator to provide a working file or a replacement of equivalent
+              value. In the rare case that a working copy cannot be delivered,
+              we may issue a credit toward a future purchase at our sole
+              discretion.
+            </p>
+            <p>
+              Technical-issue requests must include your order ID and a clear
+              description of the problem, ideally with a screenshot. Email{" "}
+              <a href="mailto:support@onedollarsell.com">
+                support@onedollarsell.com
+              </a>
+              .
             </p>
           </LegalSection>
 
-          <LegalSection number="4" title="How to Request a Refund">
-            <p>To request a refund:</p>
-            <ol>
-              <li>
-                Email{" "}
-                <a href="mailto:support@onedollarsell.com">
-                  support@onedollarsell.com
-                </a>{" "}
-                with the subject line <em>"Refund Request – [Order ID]"</em>.
-              </li>
-              <li>
-                Include your order ID (found in your Dashboard → Purchases or in
-                your confirmation email).
-              </li>
-              <li>
-                Briefly describe the reason for the refund (optional but
-                helpful).
-              </li>
-            </ol>
+          <LegalSection number="4" title="Unauthorised or Fraudulent Charges">
             <p>
-              Our team will review your request and respond within two business
-              days.
+              If you believe your account was used to make a purchase without
+              your authorisation, email{" "}
+              <a href="mailto:support@onedollarsell.com">
+                support@onedollarsell.com
+              </a>{" "}
+              immediately. We will investigate the transaction and, if fraud is
+              confirmed, reverse the charge and close the affected session.
             </p>
           </LegalSection>
 
-          <LegalSection number="5" title="Processing Time">
+          <LegalSection number="5" title="Chargebacks">
             <p>
-              Once a refund is approved, it will be processed back to your
-              original payment method within{" "}
-              <strong>5–10 business days</strong>, depending on your bank or
-              payment provider. You will receive a confirmation email when the
-              refund has been issued.
+              Before filing a chargeback with your bank or card issuer, please
+              contact us first — in most cases we can resolve the matter faster
+              directly. Chargebacks initiated without prior contact, or found to
+              be without merit after investigation, may result in suspension of
+              your Seller account and loss of access to previously purchased
+              files.
             </p>
           </LegalSection>
 
-          <LegalSection number="6" title="Chargebacks">
+          <LegalSection number="6" title="Your Acceptance of This Policy">
             <p>
-              We strongly encourage customers to contact us before initiating a
-              chargeback with their bank or payment provider. Chargebacks
-              typically take significantly longer to resolve and may result in
-              account suspension while the dispute is investigated.
-            </p>
-            <p>
-              If you have already filed a chargeback and believe it was made in
-              error, please email us and we will work to resolve the situation as
-              quickly as possible.
+              This policy is binding from the moment you place an order. A
+              checkbox at checkout records your acknowledgement. If you do not
+              accept these terms, please do not complete your purchase.
             </p>
           </LegalSection>
 
           <LegalSection number="7" title="Contact">
             <p>
-              For all refund-related enquiries, please contact our support team:
-            </p>
-            <p>
-              <strong>Email:</strong>{" "}
+              For all refund-related enquiries, please contact our support team
+              at{" "}
               <a href="mailto:support@onedollarsell.com">
                 support@onedollarsell.com
               </a>
-            </p>
-            <p>
-              We aim to respond to all support requests within one business day.
+              . We aim to respond within one business day.
             </p>
           </LegalSection>
         </div>
@@ -141,10 +118,6 @@ export default function RefundPolicyPage() {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Shared section component
-// ---------------------------------------------------------------------------
 
 function LegalSection({
   number,

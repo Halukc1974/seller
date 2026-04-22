@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SessionProvider } from "@/components/layout/session-provider";
+import { CookieConsent } from "@/components/layout/cookie-consent";
 import "./globals.css";
 
 const inter = Inter({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
           <SessionProvider>
             {children}
+            <CookieConsent />
           </SessionProvider>
         </ThemeProvider>
       </body>

@@ -19,6 +19,7 @@ const FOOTER_LINKS = {
     { label: "Help Center", href: "/help" },
     { label: "Refund Policy", href: "/refund-policy" },
     { label: "Terms of Service", href: "/terms" },
+    { label: "Creator Terms", href: "/creator-terms" },
     { label: "Privacy Policy", href: "/privacy" },
   ],
 };
