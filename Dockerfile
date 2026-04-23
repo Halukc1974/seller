@@ -35,6 +35,8 @@ COPY --from=builder /app/prisma ./prisma
 # etc.) can resolve. Writes over the same paths — no conflict.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Entrypoint runs migrations then exec's the CMD.
 COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
